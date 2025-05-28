@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
+import { useAppKitAccount } from '@reown/appkit/react';
 
 export default function PresidencyPanel() {
   const [votes, setVotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [accion, setAccion] = useState({});
   const navigate = useNavigate();
-
+  const address = useAppKitAccount();
+  
   useEffect(() => {
     fetch('http://localhost:3000/api/votes')
       .then(res => res.json())
@@ -19,34 +21,13 @@ export default function PresidencyPanel() {
       });
   }, [accion]);
 
-  /**datos de cada votes para hacer la lista de leyes registradas
-   * 
-   * 
-        [
-        {
-            "id": 1,
-            "title": "Ley de ejemplo",
-            "status": null
-        },
-        {
-            "id": 2,
-            "title": "Otra ley",
-            "status": "close"
-        }
-        ]
-   */
 
   async function handleAbrir(vote) {
     setAccion({ [vote.id]: 'Firmando...' });
-    if (!window.ethereum) {
-      setAccion({ [vote.id]: 'No se detectó wallet compatible' });
-      return;
-    }
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
+
       const message = `Abrir votación\nID: ${vote.id}\nTítulo: ${vote.title}`;
-      const signature = await signer.signMessage(message);
+      const signature = await address.signMessage(message);
 
       // Cambia el estado en el backend solo si la firma es válida
       const res = await fetch(`http://localhost:3000/api/votes/${vote.id}/abrir`, {

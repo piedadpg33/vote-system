@@ -1,28 +1,32 @@
 import { useState } from 'react';
 import { ethers } from 'ethers';
 import { useNavigate } from 'react-router-dom';
+import { useAppKitProvider} from '@reown/appkit/react';
+import { BrowserProvider } from "ethers";
 
-export default function DeputyVotingPanel({ vote, seat, disconnect }) {
+export default function DeputyVotingPanel({ address, vote, seat, disconnect }) {
   const [accion, setAccion] = useState('');
   const [votado, setVotado] = useState(false);
   const navigate = useNavigate();
+  const { walletProvider } = useAppKitProvider("eip155");
+  //const address = useAppKitAccount();
+  console.log('Dirección del wallet:', address);
 
   async function votar(choice) {
     setAccion('Firmando tu voto...');
-    if (!window.ethereum) {
-      setAccion('No se detectó wallet compatible');
-      return;
-    }
+
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new BrowserProvider(walletProvider);
       const signer = await provider.getSigner();
-      const message = `Voto\nVotación ID: ${vote.id}\nEscaño: ${seat.seat_number}\nOpción: ${choice}`;
-      const signature = await signer.signMessage(message);
+      const signature = await signer?.signMessage(`Voto\nVotacion ID: ${vote.id}\nEscaño: ${seat.seat_number}\nOpcion: ${choice}`);
+      console.log(signature);
+
 
       const res = await fetch(`http://localhost:3000/api/votes/${vote.id}/votar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          vote_id: vote.id,
           seat_number: seat.seat_number,
           choice,
           signature,

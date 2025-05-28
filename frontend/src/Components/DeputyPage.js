@@ -44,5 +44,5 @@ export default function DeputyPage({ address, disconnect }) {
     );
   }
 
-  return <DeputyVotingPanel vote={openVote} seat={seat} disconnect={disconnect} />;
+  return <DeputyVotingPanel address={address} vote={openVote} seat={seat} disconnect={disconnect} />;
 }
