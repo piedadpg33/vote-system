@@ -83,6 +83,7 @@ export default function App() {
         />
         <Route path="/consulta/:id" element={<ConsultaPage />} />
         <Route path="/voting/:id" element={<VotingInProgressPage />} />
+        <Route path='/deputy' element={<DeputyPage address={address} disconnect={disconnect} />} />
       </Routes>
     </BrowserRouter>
   );

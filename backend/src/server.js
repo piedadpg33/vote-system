@@ -6,6 +6,7 @@ require('dotenv').config(); //cargar las variables del env
 const app = express();
 app.use(cors());
 app.use(express.json());
+const { ethers } = require('ethers');
 
 const dbConfig = {
   host: 'localhost',
@@ -79,11 +80,17 @@ app.get('/api/seats/:address', async (req, res) => {
 });
 
 app.post('/api/votes/:id/votar', async (req, res) => {
-  console.log('tete',res.body);
+
+  console.log('tete',req.body);
   const vote_id = req.params.id;
   const { seat_number, choice, signature } = req.body;
 
-  if (!vote_id || !seat_number || !choice || !signature) {
+  if (  
+  vote_id === undefined || vote_id === null ||
+  seat_number === undefined || seat_number === null ||
+  !choice ||
+  !signature) {
+    console.log('faltan cositas: ',vote_id, seat_number, choice, signature);
     return res.status(400).json({ error: 'Faltan datos del voto' });
   }
 
@@ -112,7 +119,6 @@ app.post('/api/votes/:id/votar', async (req, res) => {
 
     // Verifica la firma
     const message = `Voto\nVotacion ID: ${vote_id}\nEscaño: ${seat_number}\nOpcion: ${choice}`;
-    
     let recoveredAddress;
     try {
       recoveredAddress = ethers.verifyMessage(message, signature);
@@ -133,6 +139,24 @@ app.post('/api/votes/:id/votar', async (req, res) => {
     res.status(201).json({ message: 'Voto registrado' });
   } catch (err) {
     res.status(500).json({ error: 'Error al emitir voto' });
+  } finally {
+    await connection.end();
+  }
+});
+
+//hasVoted true si el escaño ya ha votado en esta votación
+app.get('/api/votes/:vote_id/hasVoted/:seat_number', async (req, res) => {
+  const { vote_id, seat_number } = req.params;
+  const connection = await mysql.createConnection(dbConfig);
+  try {
+    const [rows] = await connection.execute(
+      'SELECT COUNT(*) as count FROM vote_records WHERE vote_id = ? AND seat_number = ?',
+      [vote_id, seat_number]
+    );
+    const hasVoted = rows[0].count > 0;
+    res.json({ hasVoted });
+  } catch (err) {
+    res.status(500).json({ error: 'Error comprobando voto' });
   } finally {
     await connection.end();
   }
