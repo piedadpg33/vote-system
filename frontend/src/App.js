@@ -1,7 +1,12 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { createAppKit, useAppKitAccount, useDisconnect } from '@reown/appkit/react'
 import { EthersAdapter } from '@reown/appkit-adapter-ethers'
 import { arbitrum, mainnet } from '@reown/appkit/networks'
 import { useEffect, useState } from 'react';
+import PresidencyPanel from './Components/PresidencyPanel';
+import ConsultaPage from './Components/ConsultaPage';
+import VotingInProgressPage from './Components/VotingInProgressPage';
+import DeputyPage from './Components/DeputyPage';
 
 const projectId = '175d627313dfd25721db852e140fed44';
 const networks = [arbitrum, mainnet];
@@ -26,6 +31,7 @@ export default function App() {
       fetch(`http://localhost:3000/api/authorized/${address}`)
         .then(res => res.json())
         .then(data => {
+           console.log('Auth data:', data);
           setAuthorized(data.authorized);
           setIsPresidency(data.isPresidency);
           setLoading(false);
@@ -56,21 +62,29 @@ export default function App() {
     );
   }
 
-  if (isPresidency) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 100 }}>
-        <h2>Panel de Presidencia</h2>
-        <button onClick={disconnect} style={{ marginBottom: 20 }}>Desconectar</button>
-        <p>Bienvenido, miembro de la presidencia.</p>
-      </div>
-    );
-  } else {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 100 }}>
-        <h2>Panel de Usuario</h2>
-        <button onClick={disconnect} style={{ marginBottom: 20 }}>Desconectar</button>
-        <p>Bienvenido, usuario.</p>
-      </div>
-    );
-  }
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            isPresidency ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 100 }}>
+                <h2>Panel de Presidencia</h2>
+                <button onClick={disconnect} style={{ marginBottom: 20 }}>Desconectar</button>
+                <p>Bienvenido, miembro de la presidencia.</p>
+                <PresidencyPanel />
+              </div>
+            ) : (
+              <DeputyPage address={address} disconnect={disconnect} />
+            )
+          }
+        />
+        <Route path="/consulta/:id" element={<ConsultaPage />} />
+        <Route path="/voting/:id" element={<VotingInProgressPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
+  
 }

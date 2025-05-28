@@ -18,13 +18,13 @@ app.get('/api/authorized/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
   const connection = await mysql.createConnection(dbConfig);
   const [rows] = await connection.execute(
-    'SELECT is_presidency FROM users WHERE wallet_address = ?',
+    'SELECT is_president FROM users WHERE wallet_address = ?',
     [wallet]
   );
   await connection.end();
   res.json({
     authorized: rows.length > 0,
-    isPresidency: rows.length > 0 ? !!rows[0].is_presidency : false
+    isPresidency: rows.length > 0 ? !!rows[0].is_president: false
   });
 });
 
