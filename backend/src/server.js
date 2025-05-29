@@ -13,7 +13,7 @@ const dbConfig = {
   database: 'vote_system'
 };
 const PORT = process.env.PORT || 3000;
-
+//Servicio de autorizacion de wallet
 app.get('/api/authorized/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
   const connection = await mysql.createConnection(dbConfig);
