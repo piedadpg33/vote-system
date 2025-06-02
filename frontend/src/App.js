@@ -23,7 +23,7 @@ export default function App() {
   const { disconnect } = useDisconnect();
   const [authorized, setAuthorized] = useState(false);
   const [isPresidency, setIsPresidency] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(null);
 
   useEffect(() => {
     if (isConnected && address) {
@@ -49,7 +49,7 @@ export default function App() {
     );
   }
 
-  if (loading) {
+  if (loading|| authorized === null) {
     return <p>Verificando permisos...</p>;
   }
 
