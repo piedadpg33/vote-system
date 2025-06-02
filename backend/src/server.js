@@ -45,7 +45,7 @@ app.get('/api/votes/open', async (req, res) => {
   const connection = await mysql.createConnection(dbConfig);
   try {
     const [results] = await connection.execute(
-      "SELECT * FROM votes WHERE status = 'open' LIMIT 1"
+      "SELECT * FROM votes WHERE status = 'EN CURSO' LIMIT 1"
     );
     if (results.length > 0) {
       res.json(results[0]);
@@ -164,4 +164,103 @@ app.get('/api/votes/:vote_id/hasVoted/:seat_number', async (req, res) => {
 
 app.listen(PORT, () => { //iniciar el servidor
     console.log(`Server is running on port ${PORT}`);
+});
+
+// Servicio para abrir una votación (requiere firma y que el creador sea presidente)
+app.post('/api/votes/:id/abrir', async (req, res) => {
+  const voteId = req.params.id;
+  const { signature, address } = req.body; // <-- Recibe también la dirección
+  console.log('Datos recibidos:', { voteId, signature, address, title: req.body.title });
+console.log('Mensaje esperado:', `Abrir votación\nID: ${voteId}\nTítulo: ${req.body.title || ''}`);
+  if (!signature || !address) {
+    return res.status(400).json({ error: 'Faltan datos para la firma' });
+  }
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+
+    // Obtener la votación y el creador
+    const [votes] = await connection.execute(
+      'SELECT created_by, status FROM votes WHERE id = ?',
+      [voteId]
+    );
+    if (votes.length === 0) {
+      await connection.end();
+      return res.status(404).json({ error: 'Votación no encontrada' });
+    }
+    const { created_by, status } = votes[0];
+    console.log('created_by:', created_by);
+
+
+    // Verificar si la votación ya está abierta o finalizada
+    if (status !== 'PENDIENTE') {
+      await connection.end();
+      return res.status(400).json({ error: 'La votación no está en estado PENDIENTE' });
+    }
+
+    // Verificar si el creador es presidente
+    const [users] = await connection.execute(
+      'SELECT is_president FROM users WHERE wallet_address = ?',
+      [created_by]
+    );
+    if (users.length === 0 || !users[0].is_president) {
+      await connection.end();
+      return res.status(403).json({ error: 'No autorizado. Solo el presidente puede abrir la votación.' });
+    }
+
+    // Verificar la firma
+    const message = `Abrir votación\nID: ${voteId}\nTítulo: ${req.body.title || ''}`;
+    let recoveredAddress;
+    try {
+      recoveredAddress = ethers.verifyMessage(message, signature);
+    } catch (err) {
+      await connection.end();
+      return res.status(400).json({ error: 'Firma inválida' });
+    }
+    const addrStr = String(address);
+    if (recoveredAddress.toLowerCase() !== addrStr.toLowerCase() || addrStr.toLowerCase() !== created_by.toLowerCase()) {
+      await connection.end();
+      return res.status(403).json({ error: 'No autorizado. La firma no corresponde al presidente.' });
+    }
+
+    // Cambiar el estado de la votación a "EN CURSO"
+    await connection.execute(
+      "UPDATE votes SET status = 'EN CURSO' WHERE id = ?",
+      [voteId]
+    );
+    await connection.end();
+    res.json({ message: 'Votación abierta correctamente' });
+  } catch (err) {
+     console.error('Error al abrir la votación:', err); // <-- Añade esta línea
+    res.status(500).json({ error: 'Error al abrir la votación' });
+  }
+});
+
+
+app.get('/api/seats', async (req, res) => {
+  const connection = await mysql.createConnection(dbConfig);
+  try {
+    const [rows] = await connection.execute('SELECT * FROM seats');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener escaños' });
+  } finally {
+    await connection.end();
+  }
+});
+
+app.get('/api/votes/:id/records', async (req, res) => {
+  const voteId = req.params.id;
+  const connection = await mysql.createConnection(dbConfig);
+  try {
+    const [rows] = await connection.execute(
+      'SELECT seat_number, choice, voted_at FROM vote_records WHERE vote_id = ?',
+      [voteId]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Error obteniendo los votos' });
+  } finally {
+    await connection.end();
+  }
 });

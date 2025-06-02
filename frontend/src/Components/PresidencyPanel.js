@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ethers } from 'ethers';
+import { useAppKitProvider } from '@reown/appkit/react';
 import { useAppKitAccount } from '@reown/appkit/react';
+import { BrowserProvider } from "ethers";
 
 export default function PresidencyPanel() {
+  const { walletProvider } = useAppKitProvider("eip155");
   const [votes, setVotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [accion, setAccion] = useState({});
@@ -25,22 +27,16 @@ export default function PresidencyPanel() {
   async function handleAbrir(vote) {
     setAccion({ [vote.id]: 'Firmando...' });
     try {
-
+      const provider = new BrowserProvider(walletProvider);
+      const signer = await provider.getSigner();
       const message = `Abrir votación\nID: ${vote.id}\nTítulo: ${vote.title}`;
-      const signature = await address.signMessage(message);
+      const signature = await signer?.signMessage(message);
 
-      // Cambia el estado en el backend solo si la firma es válida
       const res = await fetch(`http://localhost:3000/api/votes/${vote.id}/abrir`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signature }),
+        body: JSON.stringify({ signature, address: String(address.address), title: vote.title }),
       });
-
-      /** 
-       * Recibe la signature y comprueba que es válida.
-       * en caso de éxito, el backend debería cambiar el estado de la votación a "open" y devolver un mensaje de éxito.
-       * Si la firma es inválida o el usuario no está autorizado, debería devolver un error.
-      */
 
       if (res.ok) {
         setAccion({ [vote.id]: '¡Votación abierta!' });
@@ -62,10 +58,10 @@ export default function PresidencyPanel() {
         {votes.map(vote => (
           <li key={vote.id} style={{ marginBottom: 16, display: 'flex', alignItems: 'center' }}>
             <span style={{ flex: 1 }}>{vote.title}</span>
-            {vote.status === null ? (
+            {vote.status === 'PENDIENTE' ? (
               <>
                 <button onClick={() => handleAbrir(vote)}>
-                  Abrir
+                  Empezar la votación
                 </button>
                 {accion[vote.id] && <span style={{ marginLeft: 10 }}>{accion[vote.id]}</span>}
               </>
