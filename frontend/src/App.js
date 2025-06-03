@@ -9,6 +9,7 @@ import VotingInProgressPage from './Components/VotingInProgressPage';
 import DeputyPage from './Components/DeputyPage';
 import DetailsPage from './Components/DetailsPage';
 import './App.css';
+import Banner from './Components/Banner';
 
 const projectId = '175d627313dfd25721db852e140fed44';
 const networks = [arbitrum, mainnet];
@@ -30,7 +31,6 @@ export default function App() {
 
   // Función para desconectar y limpiar estado + redirigir
   function handleDisconnect() {
-    console.log("handleDisconnect ejecutado");
     disconnect();
     setAuthorized(false);
     setIsPresidency(false);
@@ -74,30 +74,33 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          isPresidency ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 100 }}>
-              <h2>Panel de Presidencia</h2>
-              <button onClick={handleDisconnect} style={{ marginBottom: 20 }}>Desconectar</button>
-              <p>Bienvenido, miembro de la presidencia.</p>
-              <PresidencyPanel />
-            </div>
-          ) : (
-            <DeputyPage address={address} disconnect={handleDisconnect} />
-          )
-        }
-      />
-      <Route path="/consulta/:id" element={<ConsultaPage />} />
-      <Route path="/voting/:id" element={<VotingInProgressPage disconnect={handleDisconnect} />} />
-      <Route path='/deputy' element={
-        isPresidency ? <div style={{ marginTop: 100, textAlign: 'center' }}><h2>Solo los diputados pueden acceder aquí.</h2></div>
-          : <DeputyPage address={address} disconnect={handleDisconnect} />
-        }
-      />
-      <Route path="/details/:id" element={<DetailsPage disconnect={handleDisconnect} />} />
-    </Routes>
+    <>
+      <Banner address={address} isPresidency={isPresidency} />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            isPresidency ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 100 }}>
+                <h2>Panel de Presidencia</h2>
+                <button onClick={handleDisconnect} style={{ marginBottom: 20 }}>Desconectar</button>
+                <p>Bienvenido, miembro de la presidencia.</p>
+                <PresidencyPanel />
+              </div>
+            ) : (
+              <DeputyPage address={address} disconnect={handleDisconnect} />
+            )
+          }
+        />
+        <Route path="/consulta/:id" element={<ConsultaPage />} />
+        <Route path="/voting/:id" element={<VotingInProgressPage disconnect={handleDisconnect} />} />
+        <Route path='/deputy' element={
+          isPresidency ? <div style={{ marginTop: 100, textAlign: 'center' }}><h2>Solo los diputados pueden acceder aquí.</h2></div>
+            : <DeputyPage address={address} disconnect={handleDisconnect} />
+          }
+        />
+        <Route path="/details/:id" element={<DetailsPage disconnect={handleDisconnect} />} />
+      </Routes>
+    </>
   );
 }
