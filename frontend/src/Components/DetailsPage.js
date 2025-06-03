@@ -6,7 +6,7 @@ import { useAppKitProvider } from '@reown/appkit/react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { BrowserProvider } from "ethers";
 
-export default function DetailsPage() {
+export default function DetailsPage({ disconnect }) {
     const { id } = useParams();
     const navigate = useNavigate();
     const [vote, setVote] = useState(null);
@@ -25,12 +25,11 @@ export default function DetailsPage() {
             });
     }, [id]);
 
-
     if (loading) return <p>Cargando detalles...</p>;
     if (!vote) return <p>Votación no encontrada</p>;
 
     if (vote.status === "EN CURSO") {
-        return <VotingInProgressPage vote={vote} />;
+        return <VotingInProgressPage vote={vote} disconnect={disconnect} />;
     }
     if (vote.status === "FINALIZADA") {
         return <ConsultaPage vote={vote} />;

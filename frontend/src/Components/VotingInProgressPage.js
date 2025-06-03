@@ -78,50 +78,92 @@ export default function VotingInProgressPage({ disconnect }) {
 
   if (loading) return <p>Cargando escaños...</p>;
 
- return (
-    <div style={{ marginTop: 100, textAlign: 'center' }}>
-      <h2>¡Votación abierta!</h2>
-      <p>La votación con ID {id} está en curso.</p>
+ // Mapea los votos por escaño
+const votosPorAsiento = {};
+votes.forEach(v => {
+  votosPorAsiento[v.seat_number] = v.choice; // 'yes' o 'no'
+});
 
-      <button onClick={() => handleCerrar(vote)}>
-        {accion[vote.id] || 'Cerrar votación'}
-      </button>
+const totalSeats = seats.length;
+const radius = 220; // radio del semicírculo
+const centerX = 300;
+const centerY = 320;
 
-      <div style={{ color: '#444', minHeight: 24 }}>
-        {accion[vote?.id] || ''}
-      </div>
+console.log("Prop disconnect en VotingInProgressPage:", disconnect);
+return (
+  <div style={{ marginTop: 60, textAlign: 'center' }}>
+    <h2>¡Votación abierta!</h2>
+    <p>La votación <b>{vote?.title}</b> está en curso.</p>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 24, marginTop: 40 }}>
-        {seats.map(seat => (
-          <div key={seat.seat_number} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: '50%',
-                background: votedSeats.has(seat.seat_number) ? 'limegreen' : '#bbb',
-                border: '2px solid #888',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold',
-                fontSize: 18,
-                color: '#222',
-                marginBottom: 8,
-                transition: 'background 0.3s'
-              }}
-              title={seat.user_wallet || 'Vacío'}
-            >
-              {seat.seat_number}
-            </div>
-            <span style={{ fontSize: 12 }}>
-              {votedSeats.has(seat.seat_number) ? 'Votó' : 'Pendiente'}
-            </span>
-          </div>
-        ))}
-      </div>
-      {/* Añade el botón aquí, antes de cerrar el div */}
-      <button onClick={disconnect} style={{ marginTop: 40 }}>Desconectar</button>
+    <button onClick={() => handleCerrar(vote)}>
+      {accion[vote?.id] || 'Cerrar votación'}
+    </button>
+
+    <div style={{ color: '#444', minHeight: 24 }}>
+      {accion[vote?.id] || ''}
     </div>
-  );
+
+    {/* Semicírculo con escaños */}
+    <div style={{ position: 'relative', width: 600, height: 400, margin: '40px auto' }}>
+      <img
+        src="/congreso-semicirculo.svg"
+        alt="Hemiciclo Congreso"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: 600,
+          height: 400,
+          zIndex: 0,
+          pointerEvents: 'none',
+          opacity: 0.7
+        }}
+      />
+      <svg width={600} height={400} style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }}>
+        {seats.map((seat, i) => {
+          const angle = Math.PI * (i / (totalSeats - 1));
+          const centerX = 300;
+          const centerY = 370; // Más abajo para que no se corte
+          const radius = 220;
+          const x = centerX + radius * Math.cos(angle - Math.PI);
+          const y = centerY + radius * Math.sin(angle - Math.PI) - 30;
+          let color = '#bbb';
+          if (votosPorAsiento[seat.seat_number] === 'yes') color = 'limegreen';
+          else if (votosPorAsiento[seat.seat_number] === 'no') color = 'crimson';
+          return (
+            <g key={seat.seat_number}>
+              <circle
+                cx={x}
+                cy={y}
+                r={22}
+                fill={color}
+                stroke="#222"
+                strokeWidth={2}
+              />
+              <text
+                x={x}
+                y={y + 6}
+                textAnchor="middle"
+                fontSize="16"
+                fill="#222"
+                fontWeight="bold"
+              >
+                {seat.seat_number}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+   <button
+  onClick={() => {
+    console.log("Botón desconectar pulsado");
+    disconnect(); // Esto ejecuta handleDisconnect de App.js
+  }}
+  style={{ marginTop: 40 }}
+>
+  Desconectar
+</button>
+  </div>
+);
 }

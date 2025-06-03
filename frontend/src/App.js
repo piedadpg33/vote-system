@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { createAppKit, useAppKitAccount, useDisconnect } from '@reown/appkit/react'
 import { EthersAdapter } from '@reown/appkit-adapter-ethers'
 import { arbitrum, mainnet } from '@reown/appkit/networks'
@@ -22,10 +22,20 @@ createAppKit({
 
 export default function App() {
   const { isConnected, address } = useAppKitAccount();
-  const { disconnect } = useDisconnect();
+  const disconnect = useDisconnect().disconnect;
   const [authorized, setAuthorized] = useState(false);
   const [isPresidency, setIsPresidency] = useState(false);
   const [loading, setLoading] = useState(null);
+  const navigate = useNavigate();
+
+  // Función para desconectar y limpiar estado + redirigir
+  function handleDisconnect() {
+    console.log("handleDisconnect ejecutado");
+    disconnect();
+    setAuthorized(false);
+    setIsPresidency(false);
+    navigate("/");
+  }
 
   useEffect(() => {
     if (isConnected && address) {
@@ -33,7 +43,6 @@ export default function App() {
       fetch(`http://localhost:3000/api/authorized/${address}`)
         .then(res => res.json())
         .then(data => {
-           console.log('Auth data:', data);
           setAuthorized(data.authorized);
           setIsPresidency(data.isPresidency);
           setLoading(false);
@@ -51,7 +60,7 @@ export default function App() {
     );
   }
 
-  if (loading|| authorized === null) {
+  if (loading || authorized === null) {
     return <p>Verificando permisos...</p>;
   }
 
@@ -59,42 +68,36 @@ export default function App() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 100 }}>
         <h2>No estás autorizado para acceder.</h2>
-        <button onClick={disconnect} style={{ marginBottom: 20 }}>Desconectar</button>
+        <button onClick={handleDisconnect} style={{ marginBottom: 20 }}>Desconectar</button>
       </div>
     );
   }
 
-
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            isPresidency ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 100 }}>
-                <h2>Panel de Presidencia</h2>
-                <button onClick={disconnect} style={{ marginBottom: 20 }}>Desconectar</button>
-                <p>Bienvenido, miembro de la presidencia.</p>
-                <PresidencyPanel />
-              </div>
-            ) : (
-              <DeputyPage address={address} disconnect={disconnect} />
-            )
-          }
-        />
-        
-        <Route path="/consulta/:id" element={<ConsultaPage />} />
-        <Route path="/voting/:id" element={<VotingInProgressPage disconnect={disconnect} />} />
-        <Route path='/deputy' element={
-          isPresidency ? <div style={{ marginTop: 100, textAlign: 'center' }}><h2>Solo los diputados pueden acceder aquí.</h2></div>
-            : <DeputyPage address={address} disconnect={disconnect} />
-          }
-        />
-        <Route path="/details/:id" element={<DetailsPage />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route
+        path="/"
+        element={
+          isPresidency ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 100 }}>
+              <h2>Panel de Presidencia</h2>
+              <button onClick={handleDisconnect} style={{ marginBottom: 20 }}>Desconectar</button>
+              <p>Bienvenido, miembro de la presidencia.</p>
+              <PresidencyPanel />
+            </div>
+          ) : (
+            <DeputyPage address={address} disconnect={handleDisconnect} />
+          )
+        }
+      />
+      <Route path="/consulta/:id" element={<ConsultaPage />} />
+      <Route path="/voting/:id" element={<VotingInProgressPage disconnect={handleDisconnect} />} />
+      <Route path='/deputy' element={
+        isPresidency ? <div style={{ marginTop: 100, textAlign: 'center' }}><h2>Solo los diputados pueden acceder aquí.</h2></div>
+          : <DeputyPage address={address} disconnect={handleDisconnect} />
+        }
+      />
+      <Route path="/details/:id" element={<DetailsPage disconnect={handleDisconnect} />} />
+    </Routes>
   );
-  <PresidencyPanel disconnect={disconnect} />
-  
 }

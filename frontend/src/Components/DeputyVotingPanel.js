@@ -49,7 +49,7 @@ export default function DeputyVotingPanel({vote, seat, disconnect }) {
 
   return (
     <div className="card center">
-      <h2>Panel de Presidencia</h2>
+      <h2>Panel de Diputado</h2>
       <div style={{ marginTop: 100, textAlign: 'center' }}>
         <h2>Votación en curso</h2>
         <p><b>Título:</b> {vote.title}</p>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import DeputyVotingPanel from './DeputyVotingPanel';
 
-export default function DeputyPage({ address, disconnect }) {
+export default function DeputyPage({ address, disconnect}) {
   const [seat, setSeat] = useState(null);
   const [votes, setVotes] = useState([]);
   const [myVotes, setMyVotes] = useState([]);
