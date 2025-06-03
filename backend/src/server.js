@@ -123,7 +123,7 @@ app.post('/api/votes/:id/votar', async (req, res) => {
     const user_wallet = seatRows[0].user_wallet;
 
     // Verifica la firma
-    const message = `Voto\nVotacion ID: ${vote_id}\nEscaño: ${seat_number}\nOpcion: ${choice}`;
+    const message = `Voto\nEscaño: ${seat_number}\nOpcion: ${choice}`;
     let recoveredAddress;
     try {
       recoveredAddress = ethers.verifyMessage(message, signature);

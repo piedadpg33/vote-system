@@ -18,7 +18,7 @@ export default function DeputyVotingPanel({vote, seat, disconnect }) {
     try {
       const provider = new BrowserProvider(walletProvider);
       const signer = await provider.getSigner();
-      const message = `Voto\nVotacion ID: ${vote.id}\nEscaño: ${seat.seat_number}\nOpcion: ${choice}`;
+      const message = `Voto\nEscaño: ${seat.seat_number}\nOpcion: ${choice}`;
       const signature=  await signer?.signMessage(message);
 
 
