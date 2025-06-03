@@ -36,3 +36,77 @@
     transform: rotate(360deg);
   }
 }
+body {
+  background: #f4f6fa;
+  font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+  margin: 0;
+  color: #222;
+}
+
+h1, h2, h3 {
+  color: #1a237e;
+  font-weight: 700;
+}
+
+button {
+  background: #1a237e;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 32px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin: 8px;
+  transition: background 0.2s;
+}
+button:hover {
+  background: #3949ab;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(30,40,90,0.08);
+  padding: 32px 24px;
+  margin: 24px auto;
+  max-width: 600px;
+}
+
+input, select {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #bdbdbd;
+  font-size: 1rem;
+  margin: 8px 0;
+}
+
+.center {
+  text-align: center;
+}
+
+.status {
+  display: inline-block;
+  padding: 4px 16px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  background: #e3eafc;
+  color: #1a237e;
+  margin-left: 8px;
+}
+
+/* Añade esto a App.css */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+.table th, .table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #e0e0e0;
+  text-align: left;
+}
+.table th {
+  background: #e3eafc;
+  color: #1a237e;
+}

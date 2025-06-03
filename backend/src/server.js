@@ -264,3 +264,69 @@ app.get('/api/votes/:id/records', async (req, res) => {
     await connection.end();
   }
 });
+
+app.get('/api/votes/records/:seat_number', async (req, res) => {
+  const seatNumber = req.params.seat_number;
+  const connection = await mysql.createConnection(dbConfig);
+  try {
+    const [rows] = await connection.execute(
+      'SELECT vote_id, choice FROM vote_records WHERE seat_number = ?',
+      [seatNumber]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Error obteniendo los votos del diputado' });
+  } finally {
+    await connection.end();
+  }
+});
+
+app.post('/api/votes/:id/cerrar', async (req, res) => {
+  const voteId = req.params.id;
+  const { signature, address, title } = req.body;
+  console.log('CERRAR VOTACIÓN BODY:', { voteId, signature, address, title });
+
+  if (!signature || !address || !title) {
+    console.log('Faltan datos para la firma');
+    return res.status(400).json({ error: 'Faltan datos para la firma' });
+  }
+  const connection = await mysql.createConnection(dbConfig);
+
+  try {
+    // Obtén el creador de la votación (presidente)
+    const [rows] = await connection.execute('SELECT created_by FROM votes WHERE id = ?', [voteId]);
+    if (!rows.length) {
+      await connection.end();
+      return res.status(404).json({ error: 'Votación no encontrada' });
+    }
+    const created_by = rows[0].created_by;
+
+    // Verifica la firma
+    const message = `Cerrar votación\nID: ${voteId}\nTítulo: ${title}`;
+    let recoveredAddress;
+    try {
+      recoveredAddress = ethers.verifyMessage(message, signature);
+    } catch (err) {
+      await connection.end();
+      return res.status(400).json({ error: 'Firma inválida' });
+    }
+    if (
+      recoveredAddress.toLowerCase() !== address.toLowerCase() ||
+      address.toLowerCase() !== created_by.toLowerCase()
+    ) {
+      await connection.end();
+      return res.status(403).json({ error: 'No autorizado. La firma no corresponde al presidente.' });
+    }
+
+    // Cambia el estado de la votación a "CERRADA"
+    await connection.execute(
+      "UPDATE votes SET status = 'CERRADA' WHERE id = ?",
+      [voteId]
+    );
+    await connection.end();
+    res.json({ message: 'Votación cerrada correctamente' });
+  } catch (err) {
+    console.error('Error al cerrar la votación:', err);
+    res.status(500).json({ error: 'Error al cerrar la votación' });
+  }
+});

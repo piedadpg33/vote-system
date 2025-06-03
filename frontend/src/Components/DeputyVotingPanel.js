@@ -48,29 +48,32 @@ export default function DeputyVotingPanel({vote, seat, disconnect }) {
   }
 
   return (
-    <div style={{ marginTop: 100, textAlign: 'center' }}>
-      <h2>Votación en curso</h2>
-      <p><b>ID:</b> {vote.id}</p>
-      <p><b>Título:</b> {vote.title}</p>
-      <p><b>Escaño:</b> {seat.seat_number}</p>
-      <div style={{ margin: '32px 0' }}>
-        <button
-          onClick={() =>votar('yes')}
-          disabled={votado}
-          style={{ marginRight: 24, padding: '10px 32px', fontWeight: 'bold', fontSize: 18 }}
-        >
-          Sí
-        </button>
-        <button
-          onClick={() => votar('no')}
-          disabled={votado}
-          style={{ padding: '10px 32px', fontWeight: 'bold', fontSize: 18 }}
-        >
-          No
-        </button>
+    <div className="card center">
+      <h2>Panel de Presidencia</h2>
+      <div style={{ marginTop: 100, textAlign: 'center' }}>
+        <h2>Votación en curso</h2>
+        <p><b>ID:</b> {vote.id}</p>
+        <p><b>Título:</b> {vote.title}</p>
+        <p><b>Escaño:</b> {seat.seat_number}</p>
+        <div style={{ margin: '32px 0' }}>
+          <button
+            onClick={() =>votar('yes')}
+            disabled={votado}
+            style={{ marginRight: 24, padding: '10px 32px', fontWeight: 'bold', fontSize: 18 }}
+          >
+            Sí
+          </button>
+          <button
+            onClick={() => votar('no')}
+            disabled={votado}
+            style={{ padding: '10px 32px', fontWeight: 'bold', fontSize: 18 }}
+          >
+            No
+          </button>
+        </div>
+        <div style={{ color: '#444', minHeight: 24 }}>{accion}</div>
+        <button onClick={disconnect} style={{ marginTop: 40 }}>Desconectar</button>
       </div>
-      <div style={{ color: '#444', minHeight: 24 }}>{accion}</div>
-      <button onClick={disconnect} style={{ marginTop: 40 }}>Desconectar</button>
     </div>
   );
 }

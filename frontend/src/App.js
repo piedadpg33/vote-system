@@ -7,6 +7,7 @@ import PresidencyPanel from './Components/PresidencyPanel';
 import ConsultaPage from './Components/ConsultaPage';
 import VotingInProgressPage from './Components/VotingInProgressPage';
 import DeputyPage from './Components/DeputyPage';
+import './App.css';
 
 const projectId = '175d627313dfd25721db852e140fed44';
 const networks = [arbitrum, mainnet];
@@ -81,11 +82,17 @@ export default function App() {
             )
           }
         />
+        
         <Route path="/consulta/:id" element={<ConsultaPage />} />
-        <Route path="/voting/:id" element={<VotingInProgressPage />} />
-        <Route path='/deputy' element={<DeputyPage address={address} disconnect={disconnect} />} />
+        <Route path="/voting/:id" element={<VotingInProgressPage disconnect={disconnect} />} />
+        <Route path='/deputy' element={
+          isPresidency ? <div style={{ marginTop: 100, textAlign: 'center' }}><h2>Solo los diputados pueden acceder aquí.</h2></div>
+            : <DeputyPage address={address} disconnect={disconnect} />
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
+  <PresidencyPanel disconnect={disconnect} />
   
 }

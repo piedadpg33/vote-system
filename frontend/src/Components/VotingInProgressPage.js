@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
 
-export default function VotingInProgressPage() {
+export default function VotingInProgressPage({ disconnect }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [seats, setSeats] = useState([]);
@@ -97,7 +97,7 @@ export default function VotingInProgressPage() {
 
   if (loading) return <p>Cargando escaños...</p>;
 
-  return (
+ return (
     <div style={{ marginTop: 100, textAlign: 'center' }}>
       <h2>¡Votación abierta!</h2>
       <p>La votación con ID {id} está en curso.</p>
@@ -134,6 +134,8 @@ export default function VotingInProgressPage() {
           </div>
         ))}
       </div>
+      {/* Añade el botón aquí, antes de cerrar el div */}
+      <button onClick={disconnect} style={{ marginTop: 40 }}>Desconectar</button>
     </div>
   );
 }
