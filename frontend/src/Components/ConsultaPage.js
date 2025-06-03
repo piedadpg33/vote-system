@@ -18,29 +18,17 @@ export default function ConsultaPage() {
       });
   }, [id]);
 
-  /**{ datos de la vote_records 
-  "id": 1,
-  "title": "Ley de ejemplo",
-  "status": "close",
-  "yes": 10,
-  "no": 5
-} */
-
-  if (loading) return <p>Cargando resultados...</p>;
-  if (!resultados) return <p>No se encontraron resultados.</p>;
+  if (loading) return <p style={{ color: '#fff', textAlign: 'center', marginTop: 100 }}>Cargando resultados...</p>;
+  if (!resultados) return <p style={{ color: '#fff', textAlign: 'center', marginTop: 100 }}>No se encontraron resultados.</p>;
 
   return (
-    <div>
-      <div style={{ marginTop: 100 }}>
-        <h2>Resultados de la votación</h2>
-        <p><b>Título:</b> {resultados.title}</p>
-        <p><b>Estado:</b> {resultados.status}</p>
-        <p><b>Votos a favor:</b> {resultados.yes}</p>
-        <p><b>Votos en contra:</b> {resultados.no}</p>
-      </div>
-
-      <button onClick={() => navigate(-1)}> Volver </button>
+    <div className="card center" style={{ maxWidth: 480, margin: '100px auto', padding: 32 }}>
+      <h2 style={{ marginBottom: 24 }}>Resultados de la votación</h2>
+      <p><b>Título:</b> {resultados.title}</p>
+      <p><b>Estado:</b> {resultados.status}</p>
+      <p><b>Votos a favor:</b> {resultados.yes}</p>
+      <p><b>Votos en contra:</b> {resultados.no}</p>
+      <button onClick={() => navigate(-1)} style={{ marginTop: 32 }}>Volver</button>
     </div>
-    
   );
 }
