@@ -1,12 +1,13 @@
 // Panel de presidencia - Consultar resultados de una votación específica
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export default function ConsultaPage() {
   const { id } = useParams();
   const [resultados, setResultados] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch(`http://localhost:3000/api/votes/${id}/resultados`)
@@ -29,13 +30,17 @@ export default function ConsultaPage() {
   if (!resultados) return <p>No se encontraron resultados.</p>;
 
   return (
-    <div style={{ marginTop: 100 }}>
-      <h2>Resultados de la votación</h2>
-      <p><b>ID:</b> {id}</p>
-      <p><b>Título:</b> {resultados.title}</p>
-      <p><b>Estado:</b> {resultados.status}</p>
-      <p><b>Votos a favor:</b> {resultados.yes}</p>
-      <p><b>Votos en contra:</b> {resultados.no}</p>
+    <div>
+      <div style={{ marginTop: 100 }}>
+        <h2>Resultados de la votación</h2>
+        <p><b>Título:</b> {resultados.title}</p>
+        <p><b>Estado:</b> {resultados.status}</p>
+        <p><b>Votos a favor:</b> {resultados.yes}</p>
+        <p><b>Votos en contra:</b> {resultados.no}</p>
+      </div>
+
+      <button onClick={() => navigate(-1)}> Volver </button>
     </div>
+    
   );
 }

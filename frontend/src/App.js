@@ -7,6 +7,7 @@ import PresidencyPanel from './Components/PresidencyPanel';
 import ConsultaPage from './Components/ConsultaPage';
 import VotingInProgressPage from './Components/VotingInProgressPage';
 import DeputyPage from './Components/DeputyPage';
+import DetailsPage from './Components/DetailsPage';
 import './App.css';
 
 const projectId = '175d627313dfd25721db852e140fed44';
@@ -90,6 +91,7 @@ export default function App() {
             : <DeputyPage address={address} disconnect={disconnect} />
           }
         />
+        <Route path="/details/:id" element={<DetailsPage />} />
       </Routes>
     </BrowserRouter>
   );

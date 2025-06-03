@@ -2,6 +2,9 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
+import { useAppKitProvider } from '@reown/appkit/react';
+import { useAppKitAccount } from '@reown/appkit/react';
+import { BrowserProvider } from "ethers";
 
 export default function VotingInProgressPage({ disconnect }) {
   const { id } = useParams();
@@ -10,6 +13,9 @@ export default function VotingInProgressPage({ disconnect }) {
   const [votes, setVotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [accion, setAccion] = useState('');
+  const { walletProvider } = useAppKitProvider("eip155");
+  const address = useAppKitAccount();
+  const [vote, setVote] = useState(null);
 
   const fetchData = async () => {
     const seatsRes = await fetch('http://localhost:3000/api/seats');
@@ -20,38 +26,16 @@ export default function VotingInProgressPage({ disconnect }) {
     setVotes(votesData);
     setLoading(false);
   }; 
-  /**Para /api/seats (array de escaños):
-     * [
-     {
-        "seat_number": 1,
-        "user_wallet": "0x1234abcd..." // o null si está vacío
-    },
-    {
-        "seat_number": 2,
-        "user_wallet": "0xabcd5678..."
-    }
-    // ...
-    ]
 
-    /api/votes/:id/records
-
-
-    Para /api/votes/:id/records (array de votos emitidos):
-            [
-        {
-            "seat_number": 1,
-            "choice": "yes",
-            "voted_at": "2024-05-28T12:34:56.000Z"
-        },
-        {
-            "seat_number": 2,
-            "choice": "no",
-            "voted_at": "2024-05-28T12:35:10.000Z"
-        }
-        // ...
-        ]
-   * 
-   */
+  useEffect(() => {
+    fetch(`http://localhost:3000/api/votes`)
+        .then(res => res.json())
+        .then(data => {
+            const found = data.find(v => String(v.id) === String(id));
+            setVote(found);
+            setLoading(false);
+        });
+    }, [id]);
 
   useEffect(() => {
     fetchData();
@@ -61,37 +45,34 @@ export default function VotingInProgressPage({ disconnect }) {
 
   const votedSeats = new Set(votes.map(v => v.seat_number));
 
-  async function handleCerrar() {
-    setAccion('Firmando para cerrar...');
-    if (!window.ethereum) {
-      setAccion('No se detectó wallet compatible');
-      return;
-    }
+  async function handleCerrar(vote) {
+    setAccion({ [vote.id]: 'Firmando para cerrar...' });
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new BrowserProvider(walletProvider);
       const signer = await provider.getSigner();
-      const message = `Cerrar votación\nID: ${id}`;
-      const signature = await signer.signMessage(message);
+      const message = `Cerrar votación\nID: ${vote.id}\nTítulo: ${vote.title}`;
+      const signature = await signer?.signMessage(message);
 
-      const res = await fetch(`http://localhost:3000/api/votes/${id}/cerrar`, { 
+      console.log('CERRAR VOTACIÓN ENVÍO:', {
+        signature,
+        address: String(address.address),
+        title: vote.title
+      });
+      
+      const res = await fetch(`http://localhost:3000/api/votes/${vote.id}/cerrar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signature }),
+        body: JSON.stringify({ signature, address: String(address.address), title: vote.title }),
       });
-      /** 
-       * Recibe la signature y comprueba que es válida.
-       * En caso de éxito, el backend debería cambiar el estado de la votación a "close" y devolver un mensaje de éxito.
-       * Si la firma es inválida o el usuario no está autorizado, debería devolver un error.
-       */
 
       if (res.ok) {
-        setAccion('¡Votación cerrada!');
-        setTimeout(() => navigate('/'), 1200); // Redirige al panel de presidencia
+        setAccion({ [vote.id]: '¡Votación cerrada!' });
+        setTimeout(() => navigate(`/`), 1000);
       } else {
-        setAccion('Error al cerrar la votación');
+        setAccion({ [vote.id]: 'Error al cerrar la votación' });
       }
     } catch (err) {
-      setAccion('Firma cancelada o fallida');
+      setAccion({ [vote.id]: 'Firma cancelada o fallida' });
     }
   }
 
@@ -101,10 +82,15 @@ export default function VotingInProgressPage({ disconnect }) {
     <div style={{ marginTop: 100, textAlign: 'center' }}>
       <h2>¡Votación abierta!</h2>
       <p>La votación con ID {id} está en curso.</p>
-      <button onClick={handleCerrar} style={{ marginBottom: 24, padding: '8px 24px', fontWeight: 'bold' }}>
-        Cerrar votación
+
+      <button onClick={() => handleCerrar(vote)}>
+        {accion[vote.id] || 'Cerrar votación'}
       </button>
-      <div style={{ color: '#444', minHeight: 24 }}>{accion}</div>
+
+      <div style={{ color: '#444', minHeight: 24 }}>
+        {accion[vote?.id] || ''}
+      </div>
+
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 24, marginTop: 40 }}>
         {seats.map(seat => (
           <div key={seat.seat_number} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

@@ -52,7 +52,6 @@ export default function DeputyVotingPanel({vote, seat, disconnect }) {
       <h2>Panel de Presidencia</h2>
       <div style={{ marginTop: 100, textAlign: 'center' }}>
         <h2>Votación en curso</h2>
-        <p><b>ID:</b> {vote.id}</p>
         <p><b>Título:</b> {vote.title}</p>
         <p><b>Escaño:</b> {seat.seat_number}</p>
         <div style={{ margin: '32px 0' }}>

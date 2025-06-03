@@ -22,60 +22,6 @@ export default function PresidencyPanel({ disconnect }) {
         setLoading(false);
       });
   }, [accion]);
-
-
-  async function handleAbrir(vote) {
-    setAccion({ [vote.id]: 'Firmando...' });
-    try {
-      const provider = new BrowserProvider(walletProvider);
-      const signer = await provider.getSigner();
-      const message = `Abrir votación\nID: ${vote.id}\nTítulo: ${vote.title}`;
-      const signature = await signer?.signMessage(message);
-
-      const res = await fetch(`http://localhost:3000/api/votes/${vote.id}/abrir`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signature, address: String(address.address), title: vote.title }),
-      });
-
-      if (res.ok) {
-        setAccion({ [vote.id]: '¡Votación abierta!' });
-        setTimeout(() => navigate(`/voting/${vote.id}`), 1000);
-      } else {
-        setAccion({ [vote.id]: 'Error al abrir la votación' });
-      }
-    } catch (err) {
-      setAccion({ [vote.id]: 'Firma cancelada o fallida' });
-    }
-  }
-  async function handleCerrar(vote) {
-    setAccion({ [vote.id]: 'Firmando para cerrar...' });
-    try {
-      const provider = new BrowserProvider(walletProvider);
-      const signer = await provider.getSigner();
-      const message = `Cerrar votación\nID: ${vote.id}\nTítulo: ${vote.title}`;
-      const signature = await signer?.signMessage(message);
-      console.log('CERRAR VOTACIÓN ENVÍO:', {
-  signature,
-  address: String(address.address),
-  title: vote.title
-});
-      const res = await fetch(`http://localhost:3000/api/votes/${vote.id}/cerrar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signature, address: String(address.address), title: vote.title }),
-      });
-
-      if (res.ok) {
-        setAccion({ [vote.id]: '¡Votación cerrada!' });
-        setTimeout(() => navigate(`/`), 1000);
-      } else {
-        setAccion({ [vote.id]: 'Error al cerrar la votación' });
-      }
-    } catch (err) {
-      setAccion({ [vote.id]: 'Firma cancelada o fallida' });
-    }
-  }
     
 
   if (loading) return <p>Cargando leyes...</p>;
@@ -86,10 +32,9 @@ export default function PresidencyPanel({ disconnect }) {
     <table className="table">
       <thead>
         <tr>
-          <th>ID</th>
           <th>Título</th>
           <th>Estado</th>
-          <th>Acción</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -99,7 +44,12 @@ export default function PresidencyPanel({ disconnect }) {
           <td>{vote.status}</td>
           {/* AQUÍ VA LA COLUMNA DE ACCIONES */}
           <td>
-            {/* Aquí pega el bloque que te pasé */}
+
+              <button onClick={() => navigate(`/details/${vote.id}`)}>
+                Ver detalles
+              </button>
+
+            {/* Aquí pega el bloque que te pasé
             {vote.status === 'PENDIENTE' ? (
               <button onClick={() => handleAbrir(vote)}>
                 {accion[vote.id] || 'Empezar votación'}
@@ -112,13 +62,13 @@ export default function PresidencyPanel({ disconnect }) {
               <button onClick={() => navigate(`/voting/${vote.id}`)}>
                 Ver
               </button>
-            )}
+            )} */}
           </td>
         </tr>
       ))}
     </tbody>
     </table>
-    <button onClick={disconnect}>Desconectar</button>
+  
   </div>
 );
 }

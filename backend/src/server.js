@@ -15,6 +15,7 @@ const dbConfig = {
   database: 'vote_system'
 };
 const PORT = process.env.PORT || 3000;
+
 //Servicio de autorizacion de wallet
 app.get('/api/authorized/:wallet', async (req, res) => {
   const wallet = req.params.wallet;
@@ -30,6 +31,7 @@ app.get('/api/authorized/:wallet', async (req, res) => {
   });
 });
 
+// Servicio para mostrar todas las votaciones
 app.get('/api/votes', async (req, res) => {
   const connection = await mysql.createConnection(dbConfig);
   try {
@@ -41,6 +43,8 @@ app.get('/api/votes', async (req, res) => {
     await connection.end();
   }
 });
+
+// Servicio para ver votaciones en curso
 app.get('/api/votes/open', async (req, res) => {
   const connection = await mysql.createConnection(dbConfig);
   try {
@@ -59,6 +63,7 @@ app.get('/api/votes/open', async (req, res) => {
   }
 });
 
+// Servicio para saber si un escaño está ocupado por una dirección específica
 app.get('/api/seats/:address', async (req, res) => {
   const { address } = req.params;
   const connection = await mysql.createConnection(dbConfig);
@@ -79,9 +84,9 @@ app.get('/api/seats/:address', async (req, res) => {
   }
 });
 
+// Servicio para votar. Requiere firma y que el escaño no haya votado ya
 app.post('/api/votes/:id/votar', async (req, res) => {
 
-  console.log('tete',req.body);
   const vote_id = req.params.id;
   const { seat_number, choice, signature } = req.body;
 
@@ -236,7 +241,7 @@ console.log('Mensaje esperado:', `Abrir votación\nID: ${voteId}\nTítulo: ${req
   }
 });
 
-
+// Servicio para obtener los escaños disponibles
 app.get('/api/seats', async (req, res) => {
   const connection = await mysql.createConnection(dbConfig);
   try {
@@ -249,6 +254,7 @@ app.get('/api/seats', async (req, res) => {
   }
 });
 
+// Servicio para obtener los registros de votos de una votación
 app.get('/api/votes/:id/records', async (req, res) => {
   const voteId = req.params.id;
   const connection = await mysql.createConnection(dbConfig);
@@ -265,6 +271,7 @@ app.get('/api/votes/:id/records', async (req, res) => {
   }
 });
 
+// Servicio para obtener los votos de un diputado por su número de escaño
 app.get('/api/votes/records/:seat_number', async (req, res) => {
   const seatNumber = req.params.seat_number;
   const connection = await mysql.createConnection(dbConfig);
@@ -281,6 +288,7 @@ app.get('/api/votes/records/:seat_number', async (req, res) => {
   }
 });
 
+// Servicio para cerrar una votación (requiere firma y que el creador sea presidente)
 app.post('/api/votes/:id/cerrar', async (req, res) => {
   const voteId = req.params.id;
   const { signature, address, title } = req.body;
@@ -320,7 +328,7 @@ app.post('/api/votes/:id/cerrar', async (req, res) => {
 
     // Cambia el estado de la votación a "CERRADA"
     await connection.execute(
-      "UPDATE votes SET status = 'CERRADA' WHERE id = ?",
+      "UPDATE votes SET status = 'FINALIZADA' WHERE id = ?",
       [voteId]
     );
     await connection.end();
@@ -328,5 +336,48 @@ app.post('/api/votes/:id/cerrar', async (req, res) => {
   } catch (err) {
     console.error('Error al cerrar la votación:', err);
     res.status(500).json({ error: 'Error al cerrar la votación' });
+  }
+});
+
+
+
+// Servicio para obtener los resultados de una votación
+app.get('/api/votes/:id/resultados', async (req, res) => {
+  const voteId = req.params.id;
+  const connection = await mysql.createConnection(dbConfig);
+  try {
+    // Obtén los datos de la votación
+    const [voteRows] = await connection.execute(
+      'SELECT id, title, status FROM votes WHERE id = ?',
+      [voteId]
+    );
+    if (!voteRows.length) {
+      await connection.end();
+      return res.status(404).json({ error: 'Votación no encontrada' });
+    }
+    const vote = voteRows[0];
+
+    // Cuenta los votos a favor y en contra
+    const [resultRows] = await connection.execute(
+      `SELECT 
+         SUM(choice = 'yes') AS yes, 
+         SUM(choice = 'no') AS no 
+       FROM vote_records 
+       WHERE vote_id = ?`,
+      [voteId]
+    );
+    const resultados = {
+      id: vote.id,
+      title: vote.title,
+      status: vote.status,
+      yes: Number(resultRows[0].yes) || 0,
+      no: Number(resultRows[0].no) || 0
+    };
+
+    await connection.end();
+    res.json(resultados);
+  } catch (err) {
+    if (connection) await connection.end();
+    res.status(500).json({ error: 'Error obteniendo resultados' });
   }
 });
