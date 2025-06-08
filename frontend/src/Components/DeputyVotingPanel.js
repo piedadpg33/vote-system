@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { ethers } from 'ethers';
 import { useNavigate } from 'react-router-dom';
 import { useAppKitProvider} from '@reown/appkit/react';
 import { BrowserProvider } from "ethers";

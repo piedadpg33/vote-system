@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppKitProvider } from '@reown/appkit/react';
 import { useAppKitAccount } from '@reown/appkit/react';
-import { BrowserProvider } from "ethers";
 
 export default function PresidencyPanel({ disconnect }) {
   const { walletProvider } = useAppKitProvider("eip155");
