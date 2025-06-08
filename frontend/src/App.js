@@ -1,7 +1,7 @@
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { createAppKit, useAppKitAccount, useDisconnect } from '@reown/appkit/react'
 import { EthersAdapter } from '@reown/appkit-adapter-ethers'
-import { arbitrum, mainnet } from '@reown/appkit/networks'
+import { arbitrum, mainnet, sepolia } from '@reown/appkit/networks'
 import { useEffect, useState } from 'react';
 import PresidencyPanel from './Components/PresidencyPanel';
 import ConsultaPage from './Components/ConsultaPage';
@@ -12,7 +12,7 @@ import './App.css';
 import Banner from './Components/Banner';
 
 const projectId = '175d627313dfd25721db852e140fed44';
-const networks = [arbitrum, mainnet];
+const networks = [arbitrum, mainnet, sepolia];
 
 createAppKit({
   adapters: [new EthersAdapter()],

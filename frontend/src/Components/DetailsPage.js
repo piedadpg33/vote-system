@@ -35,7 +35,33 @@ export default function DetailsPage({ disconnect }) {
         return <ConsultaPage vote={vote} />;
     }
 
+    // Fuerza el cambio a Sepolia antes de firmar
+    async function switchToSepolia() {
+        if (window.ethereum) {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0xAA36A7' }],
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0xAA36A7',
+                            chainName: 'Sepolia',
+                            rpcUrls: ['https://ethereum-sepolia.core.chainstack.com/'],
+                            nativeCurrency: { name: 'SepoliaETH', symbol: 'ETH', decimals: 18 },
+                            blockExplorerUrls: ['https://sepolia.etherscan.io'],
+                        }],
+                    });
+                }
+            }
+        }
+    }
+
     async function handleAbrir(vote) {
+        await switchToSepolia(); // <-- Fuerza Sepolia antes de firmar
         setAccion({ [vote.id]: 'Firmando...' });
         try {
             const provider = new BrowserProvider(walletProvider);
@@ -64,7 +90,6 @@ export default function DetailsPage({ disconnect }) {
     return (
         <div className="card center">
             <h2>Detalles de la votación</h2>
-            <p><b>ID:</b> {vote.id}</p>
             <p><b>Título:</b> {vote.title}</p>
             <p><b>Descripción:</b> {vote.description}</p>
             <p><b>Estado:</b> {vote.status}</p>

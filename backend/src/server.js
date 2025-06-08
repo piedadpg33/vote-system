@@ -331,15 +331,55 @@ app.post('/api/votes/:id/cerrar', async (req, res) => {
       "UPDATE votes SET status = 'FINALIZADA' WHERE id = ?",
       [voteId]
     );
+
+    // Obtener resultados de la votación
+    const [resultRows] = await connection.execute(
+      `SELECT 
+         SUM(choice = 'yes') AS yes, 
+         SUM(choice = 'no') AS no, 
+         SUM(choice = 'abstain') AS abstain
+       FROM vote_records 
+       WHERE vote_id = ?`,
+      [voteId]
+    );
+    const yes = Number(resultRows[0].yes) || 0;
+    const no = Number(resultRows[0].no) || 0;
+    const abstain = Number(resultRows[0].abstain) || 0;
+
+    // Guardar resultado en la blockchain
+    let txHash = null;
+    try {
+      txHash = await guardarResultadoEnBlockchain(Number(voteId), yes, no, abstain);
+      console.log('Resultado guardado en blockchain. TxHash:', txHash);
+    } catch (err) {
+      console.error('Error guardando resultado en blockchain:', err);
+    }
+
     await connection.end();
-    res.json({ message: 'Votación cerrada correctamente' });
+    res.json({ message: 'Votación cerrada correctamente', txHash });
   } catch (err) {
     console.error('Error al cerrar la votación:', err);
     res.status(500).json({ error: 'Error al cerrar la votación' });
   }
 });
 
+// --- Blockchain VotingResults contract integration ---
+const CONTRACT_ADDRESS = "0x0a812abc1F2CaD5AB21E32D2Bc6411A328A13363";
+const CONTRACT_ABI = [
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"voteId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"yes","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"no","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"abstain","type":"uint256"}],"name":"VoteClosed","type":"event"},
+  {"inputs":[{"internalType":"uint256","name":"voteId","type":"uint256"}],"name":"getResult","outputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"results","outputs":[{"internalType":"uint256","name":"yes","type":"uint256"},{"internalType":"uint256","name":"no","type":"uint256"},{"internalType":"uint256","name":"abstain","type":"uint256"},{"internalType":"bool","name":"exists","type":"bool"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"voteId","type":"uint256"},{"internalType":"uint256","name":"yes","type":"uint256"},{"internalType":"uint256","name":"no","type":"uint256"},{"internalType":"uint256","name":"abstain","type":"uint256"}],"name":"saveResult","outputs":[],"stateMutability":"nonpayable","type":"function"}
+];
 
+async function guardarResultadoEnBlockchain(voteId, yes, no, abstain) {
+  const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
+  const wallet = new ethers.Wallet(process.env.SEPOLIA_PRIVATE_KEY, provider);
+  const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, wallet);
+  const tx = await contract.saveResult(voteId, yes, no, abstain);
+  await tx.wait();
+  return tx.hash;
+}
 
 // Servicio para obtener los resultados de una votación
 app.get('/api/votes/:id/resultados', async (req, res) => {
@@ -357,25 +397,57 @@ app.get('/api/votes/:id/resultados', async (req, res) => {
     }
     const vote = voteRows[0];
 
-    // Cuenta los votos a favor y en contra
-    const [resultRows] = await connection.execute(
-      `SELECT 
-         SUM(choice = 'yes') AS yes, 
-         SUM(choice = 'no') AS no 
-       FROM vote_records 
-       WHERE vote_id = ?`,
-      [voteId]
-    );
-    const resultados = {
+    let yes = 0, no = 0, abstain = 0;
+    if (vote.status === 'FINALIZADA') {
+      // Leer resultados desde la blockchain
+      try {
+        const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+        const result = await contract.getResult(Number(voteId));
+        yes = Number(result[0]);
+        no = Number(result[1]);
+        abstain = Number(result[2]);
+      } catch (err) {
+        console.error('Error leyendo resultados de blockchain:', err);
+        // Si falla, intenta leer de la base de datos como fallback
+        const [resultRows] = await connection.execute(
+          `SELECT 
+             SUM(choice = 'yes') AS yes, 
+             SUM(choice = 'no') AS no, 
+             SUM(choice = 'abstain') AS abstain
+           FROM vote_records 
+           WHERE vote_id = ?`,
+          [voteId]
+        );
+        yes = Number(resultRows[0].yes) || 0;
+        no = Number(resultRows[0].no) || 0;
+        abstain = Number(resultRows[0].abstain) || 0;
+      }
+    } else {
+      // Si no está finalizada, lee de la base de datos
+      const [resultRows] = await connection.execute(
+        `SELECT 
+           SUM(choice = 'yes') AS yes, 
+           SUM(choice = 'no') AS no, 
+           SUM(choice = 'abstain') AS abstain
+         FROM vote_records 
+         WHERE vote_id = ?`,
+        [voteId]
+      );
+      yes = Number(resultRows[0].yes) || 0;
+      no = Number(resultRows[0].no) || 0;
+      abstain = Number(resultRows[0].abstain) || 0;
+    }
+
+    await connection.end();
+    res.json({
       id: vote.id,
       title: vote.title,
       status: vote.status,
-      yes: Number(resultRows[0].yes) || 0,
-      no: Number(resultRows[0].no) || 0
-    };
-
-    await connection.end();
-    res.json(resultados);
+      yes,
+      no,
+      abstain
+    });
   } catch (err) {
     if (connection) await connection.end();
     res.status(500).json({ error: 'Error obteniendo resultados' });

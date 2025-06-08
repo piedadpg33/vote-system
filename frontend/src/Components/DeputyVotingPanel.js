@@ -12,7 +12,33 @@ export default function DeputyVotingPanel({vote, seat, disconnect }) {
  
 
 
+  // Fuerza el cambio a Sepolia antes de firmar
+  async function switchToSepolia() {
+    if (window.ethereum) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0xAA36A7' }],
+        });
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0xAA36A7',
+              chainName: 'Sepolia',
+              rpcUrls: ['https://ethereum-sepolia.core.chainstack.com/'],
+              nativeCurrency: { name: 'SepoliaETH', symbol: 'ETH', decimals: 18 },
+              blockExplorerUrls: ['https://sepolia.etherscan.io'],
+            }],
+          });
+        }
+      }
+    }
+  }
+
   async function votar(choice) {
+    await switchToSepolia(); // <-- Fuerza Sepolia antes de firmar
     setAccion('Firmando tu voto...');
 
     try {
