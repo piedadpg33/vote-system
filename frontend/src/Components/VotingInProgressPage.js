@@ -93,7 +93,7 @@ export default function VotingInProgressPage({ disconnect }) {
 
       if (res.ok) {
         setAccion({ [vote.id]: '¡Votación cerrada!' });
-        setTimeout(() => navigate(`/`), 1000);
+        setTimeout(() => navigate(`/details/${vote.id}`), 1000);
       } else {
         setAccion({ [vote.id]: 'Error al cerrar la votación' });
       }

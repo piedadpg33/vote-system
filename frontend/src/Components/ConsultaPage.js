@@ -28,7 +28,7 @@ export default function ConsultaPage() {
       <p><b>Estado:</b> {resultados.status}</p>
       <p><b>Votos a favor:</b> {resultados.yes}</p>
       <p><b>Votos en contra:</b> {resultados.no}</p>
-      <button onClick={() => navigate(-1)} style={{ marginTop: 32 }}>Volver</button>
+      <button onClick={() => navigate(`/`)} style={{ marginTop: 32 }}>Volver</button>
     </div>
   );
 }

@@ -53,7 +53,7 @@ export default function App() {
   if (!isConnected) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 100 }}>
-        <h2>Bienvenido al sistema de votación</h2>
+        <h2>Bienvenido al sistema de votación usando Wallet Connect</h2>
         <p>Por favor, conecta tu wallet para continuar</p>
         <appkit-button />
       </div>
