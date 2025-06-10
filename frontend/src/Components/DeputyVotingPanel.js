@@ -83,14 +83,14 @@ export default function DeputyVotingPanel({vote, seat, disconnect }) {
           <button
             onClick={() =>votar('yes')}
             disabled={votado}
-            style={{ marginRight: 24, padding: '10px 32px', fontWeight: 'bold', fontSize: 18 }}
+            style={{ marginRight: 24, padding: '10px 32px', fontWeight: 'bold', fontSize: 18, backgroundColor: 'green', color: 'white' }}
           >
             Sí
           </button>
           <button
             onClick={() => votar('no')}
             disabled={votado}
-            style={{ padding: '10px 32px', fontWeight: 'bold', fontSize: 18 }}
+            style={{ padding: '10px 32px', fontWeight: 'bold', fontSize: 18, backgroundColor: 'red', color: 'white' }}
           >
             No
           </button>

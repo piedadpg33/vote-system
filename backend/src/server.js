@@ -326,37 +326,35 @@ app.post('/api/votes/:id/cerrar', async (req, res) => {
       return res.status(403).json({ error: 'No autorizado. La firma no corresponde al presidente.' });
     }
 
-    // Cambia el estado de la votación a "CERRADA"
+    // Cambia el estado de la votación a "FINALIZADA"
     await connection.execute(
       "UPDATE votes SET status = 'FINALIZADA' WHERE id = ?",
       [voteId]
     );
 
-    // Obtener resultados de la votación
+    // Obtener resultados de la votación (solo yes y no)
     const [resultRows] = await connection.execute(
       `SELECT 
          SUM(choice = 'yes') AS yes, 
-         SUM(choice = 'no') AS no, 
-         SUM(choice = 'abstain') AS abstain
+         SUM(choice = 'no') AS no
        FROM vote_records 
        WHERE vote_id = ?`,
       [voteId]
     );
     const yes = Number(resultRows[0].yes) || 0;
     const no = Number(resultRows[0].no) || 0;
-    const abstain = Number(resultRows[0].abstain) || 0;
 
-    // Guardar resultado en la blockchain
-    let txHash = null;
-    try {
-      txHash = await guardarResultadoEnBlockchain(Number(voteId), yes, no, abstain);
-      console.log('Resultado guardado en blockchain. TxHash:', txHash);
-    } catch (err) {
-      console.error('Error guardando resultado en blockchain:', err);
-    }
+    // Obtener total de escaños (diputados)
+    const [seatRows] = await connection.execute(
+      `SELECT COUNT(*) AS total FROM seats`
+    );
+    const total = Number(seatRows[0].total) || 0;
+
+    // Calcular abstenciones
+    const abstain = total - (yes + no);
 
     await connection.end();
-    res.json({ message: 'Votación cerrada correctamente', txHash });
+    res.json({ message: 'Votación cerrada correctamente', yes, no, abstain });
   } catch (err) {
     console.error('Error al cerrar la votación:', err);
     res.status(500).json({ error: 'Error al cerrar la votación' });
@@ -398,6 +396,12 @@ app.get('/api/votes/:id/resultados', async (req, res) => {
     const vote = voteRows[0];
 
     let yes = 0, no = 0, abstain = 0;
+    // Obtener total de escaños (diputados)
+    const [seatRows] = await connection.execute(
+      `SELECT COUNT(*) AS total FROM seats`
+    );
+    const total = Number(seatRows[0].total) || 0;
+
     if (vote.status === 'FINALIZADA') {
       // Leer resultados desde la blockchain
       try {
@@ -413,30 +417,28 @@ app.get('/api/votes/:id/resultados', async (req, res) => {
         const [resultRows] = await connection.execute(
           `SELECT 
              SUM(choice = 'yes') AS yes, 
-             SUM(choice = 'no') AS no, 
-             SUM(choice = 'abstain') AS abstain
+             SUM(choice = 'no') AS no
            FROM vote_records 
            WHERE vote_id = ?`,
           [voteId]
         );
         yes = Number(resultRows[0].yes) || 0;
         no = Number(resultRows[0].no) || 0;
-        abstain = Number(resultRows[0].abstain) || 0;
+        abstain = total - (yes + no);
       }
     } else {
       // Si no está finalizada, lee de la base de datos
       const [resultRows] = await connection.execute(
         `SELECT 
            SUM(choice = 'yes') AS yes, 
-           SUM(choice = 'no') AS no, 
-           SUM(choice = 'abstain') AS abstain
+           SUM(choice = 'no') AS no
          FROM vote_records 
          WHERE vote_id = ?`,
         [voteId]
       );
       yes = Number(resultRows[0].yes) || 0;
       no = Number(resultRows[0].no) || 0;
-      abstain = Number(resultRows[0].abstain) || 0;
+      abstain = total - (yes + no);
     }
 
     await connection.end();

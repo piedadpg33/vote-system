@@ -48,20 +48,7 @@ export default function PresidencyPanel({ disconnect }) {
                 Ver detalles
               </button>
 
-            {/* Aquí pega el bloque que te pasé
-            {vote.status === 'PENDIENTE' ? (
-              <button onClick={() => handleAbrir(vote)}>
-                {accion[vote.id] || 'Empezar votación'}
-              </button>
-            ) : vote.status === 'EN CURSO' ? (
-              <button onClick={() => handleCerrar(vote)}>
-                {accion[vote.id] || 'Cerrar votación'}
-              </button>
-            ) : (
-              <button onClick={() => navigate(`/voting/${vote.id}`)}>
-                Ver
-              </button>
-            )} */}
+           
           </td>
         </tr>
       ))}

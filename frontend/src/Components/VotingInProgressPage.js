@@ -5,6 +5,8 @@ import { ethers } from 'ethers';
 import { useAppKitProvider } from '@reown/appkit/react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { BrowserProvider } from "ethers";
+import CONTRACT_ABI from './VotingResultsABI.json'; // Ajusta la ruta si es necesario
+
 
 export default function VotingInProgressPage({ disconnect }) {
   const { id } = useParams();
@@ -16,6 +18,8 @@ export default function VotingInProgressPage({ disconnect }) {
   const { walletProvider } = useAppKitProvider("eip155");
   const address = useAppKitAccount();
   const [vote, setVote] = useState(null);
+  const CONTRACT_ADDRESS = "0xEda37095c9bcA6C52f5114a89a5aB8ebFa2E98cc"; // Cambia por tu dirección real
+
 
   const fetchData = async () => {
     const seatsRes = await fetch('http://localhost:3000/api/seats');
@@ -70,37 +74,46 @@ export default function VotingInProgressPage({ disconnect }) {
     }
   }
 
-  async function handleCerrar(vote) {
-    await switchToSepolia(); // <-- Fuerza Sepolia antes de firmar
-    setAccion({ [vote.id]: 'Firmando para cerrar...' });
-    try {
-      const provider = new BrowserProvider(walletProvider);
-      const signer = await provider.getSigner();
-      const message = `Cerrar votación\nID: ${vote.id}\nTítulo: ${vote.title}`;
-      const signature = await signer?.signMessage(message);
+ async function handleCerrar(vote) {
+  await switchToSepolia();
+  setAccion({ [vote.id]: 'Firmando para cerrar...' });
+  try {
+    const provider = new BrowserProvider(walletProvider);
+    const signer = await provider.getSigner();
+    const message = `Cerrar votación\nID: ${vote.id}\nTítulo: ${vote.title}`;
+    const signature = await signer?.signMessage(message);
 
-      console.log('CERRAR VOTACIÓN ENVÍO:', {
-        signature,
-        address: String(address.address),
-        title: vote.title
-      });
-      
-      const res = await fetch(`http://localhost:3000/api/votes/${vote.id}/cerrar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signature, address: String(address.address), title: vote.title }),
-      });
+    // 1. Cierra la votación en el backend y obtiene los resultados
+    const res = await fetch(`http://localhost:3000/api/votes/${vote.id}/cerrar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ signature, address: String(address.address), title: vote.title }),
+    });
 
-      if (res.ok) {
-        setAccion({ [vote.id]: '¡Votación cerrada!' });
-        setTimeout(() => navigate(`/details/${vote.id}`), 1000);
-      } else {
-        setAccion({ [vote.id]: 'Error al cerrar la votación' });
-      }
-    } catch (err) {
-      setAccion({ [vote.id]: 'Firma cancelada o fallida' });
+    if (!res.ok) {
+      setAccion({ [vote.id]: 'Error al cerrar la votación' });
+      return;
     }
+
+    const { yes, no, abstain } = await res.json();
+
+    // 2. Guarda el resultado en la blockchain usando el signer de WalletConnect/AppKit
+    setAccion({ [vote.id]: 'Enviando transacción a la blockchain...' });
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    console.log('CONTRACT_ADDRESS', CONTRACT_ADDRESS);
+console.log('CONTRACT_ABI', CONTRACT_ABI);
+console.log('signer', signer);
+console.log('saveResult args:', vote.id, yes, no, abstain);
+    const tx = await contract.saveResult(vote.id, yes, no, abstain);
+    await tx.wait();
+
+    setAccion({ [vote.id]: '¡Votación cerrada y resultado guardado en blockchain!' });
+    setTimeout(() => navigate(`/details/${vote.id}`), 1500);
+  } catch (err) {
+    setAccion({ [vote.id]: 'Error o rechazo en la wallet' });
+    console.error(err);
   }
+}
 
   if (loading) return <p>Cargando escaños...</p>;
 
