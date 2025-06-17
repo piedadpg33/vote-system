@@ -75,19 +75,13 @@ export default function VotingInProgressPage({ disconnect }) {
   }
 
  async function handleCerrar(vote) {
-  await switchToSepolia();
-  setAccion({ [vote.id]: 'Firmando para cerrar...' });
+  setAccion({ [vote.id]: 'Cerrando votación...' });
   try {
-    const provider = new BrowserProvider(walletProvider);
-    const signer = await provider.getSigner();
-    const message = `Cerrar votación\nID: ${vote.id}\nTítulo: ${vote.title}`;
-    const signature = await signer?.signMessage(message);
-
-    // 1. Cierra la votación en el backend y obtiene los resultados
+    // 1. Cierra la votación en el backend
     const res = await fetch(`http://localhost:3000/api/votes/${vote.id}/cerrar`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ signature, address: String(address.address), title: vote.title }),
+      body: JSON.stringify({ title: vote.title }),
     });
 
     if (!res.ok) {
@@ -97,20 +91,21 @@ export default function VotingInProgressPage({ disconnect }) {
 
     const { yes, no, abstain } = await res.json();
 
-    // 2. Guarda el resultado en la blockchain usando el signer de WalletConnect/AppKit
+    // 2. Guardar resultado en blockchain (esto sí pide firma en la wallet)
     setAccion({ [vote.id]: 'Enviando transacción a la blockchain...' });
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-    console.log('CONTRACT_ADDRESS', CONTRACT_ADDRESS);
-console.log('CONTRACT_ABI', CONTRACT_ABI);
-console.log('signer', signer);
-console.log('saveResult args:', vote.id, yes, no, abstain);
-    const tx = await contract.saveResult(vote.id, yes, no, abstain);
-    await tx.wait();
+
+   // Usa el provider de AppKit (WalletConnect)
+  const provider = new BrowserProvider(walletProvider); // <--- este es el cambio clave
+  const signer = await provider.getSigner();
+  const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+  const tx = await contract.saveResult(vote.id, yes, no, abstain);
+  await tx.wait();
 
     setAccion({ [vote.id]: '¡Votación cerrada y resultado guardado en blockchain!' });
     setTimeout(() => navigate(`/details/${vote.id}`), 1500);
   } catch (err) {
-    setAccion({ [vote.id]: 'Error o rechazo en la wallet' });
+    setAccion({ [vote.id]: 'Error al cerrar la votación' });
     console.error(err);
   }
 }

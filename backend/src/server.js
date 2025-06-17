@@ -288,42 +288,19 @@ app.get('/api/votes/records/:seat_number', async (req, res) => {
   }
 });
 
-// Servicio para cerrar una votación (requiere firma y que el creador sea presidente)
+// Servicio para cerrar una votación (ya no requiere firma ni address)
 app.post('/api/votes/:id/cerrar', async (req, res) => {
   const voteId = req.params.id;
-  const { signature, address, title } = req.body;
-  console.log('CERRAR VOTACIÓN BODY:', { voteId, signature, address, title });
+  const { title } = req.body; // solo recibimos el título si lo necesitas para logs
 
-  if (!signature || !address || !title) {
-    console.log('Faltan datos para la firma');
-    return res.status(400).json({ error: 'Faltan datos para la firma' });
-  }
   const connection = await mysql.createConnection(dbConfig);
 
   try {
-    // Obtén el creador de la votación (presidente)
+    // Obtén el creador de la votación (opcional, puedes quitarlo si no lo usas)
     const [rows] = await connection.execute('SELECT created_by FROM votes WHERE id = ?', [voteId]);
     if (!rows.length) {
       await connection.end();
       return res.status(404).json({ error: 'Votación no encontrada' });
-    }
-    const created_by = rows[0].created_by;
-
-    // Verifica la firma
-    const message = `Cerrar votación\nID: ${voteId}\nTítulo: ${title}`;
-    let recoveredAddress;
-    try {
-      recoveredAddress = ethers.verifyMessage(message, signature);
-    } catch (err) {
-      await connection.end();
-      return res.status(400).json({ error: 'Firma inválida' });
-    }
-    if (
-      recoveredAddress.toLowerCase() !== address.toLowerCase() ||
-      address.toLowerCase() !== created_by.toLowerCase()
-    ) {
-      await connection.end();
-      return res.status(403).json({ error: 'No autorizado. La firma no corresponde al presidente.' });
     }
 
     // Cambia el estado de la votación a "FINALIZADA"
