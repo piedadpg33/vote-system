@@ -38,7 +38,7 @@ export default function DeputyVotingPanel({vote, seat, disconnect }) {
 
   async function votar(choice) {
     await switchToSepolia(); // <-- Fuerza Sepolia antes de firmar
-    setAccion('Firmando tu voto...');
+    setAccion('Por favor, confirma la firma de tu voto en tu wallet. Si usas WalletConnect, revisa tu app móvil.');
 
     try {
       const provider = new BrowserProvider(walletProvider);

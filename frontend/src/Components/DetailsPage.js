@@ -11,7 +11,8 @@ export default function DetailsPage({ disconnect }) {
     const navigate = useNavigate();
     const [vote, setVote] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [accion, setAccion] = useState("");
+    const [accion, setAccion] = useState({});
+    const [boton, setBoton] = useState({});
     const { walletProvider } = useAppKitProvider("eip155");
     const address = useAppKitAccount();
 
@@ -62,7 +63,8 @@ export default function DetailsPage({ disconnect }) {
 
     async function handleAbrir(vote) {
         await switchToSepolia(); // <-- Fuerza Sepolia antes de firmar
-        setAccion({ [vote.id]: 'Firmando...' });
+        setBoton({ [vote.id]: 'Firmando...' });
+        setAccion({ [vote.id]: 'Por favor, firma la apertura de la votación en la wallet. Si usas WalletConnect, revisa tu app móvil.' });
         try {
             const provider = new BrowserProvider(walletProvider);
             const signer = await provider.getSigner();
@@ -76,12 +78,15 @@ export default function DetailsPage({ disconnect }) {
             });
 
             if (res.ok) {
+                setBoton({ [vote.id]: 'Empezar votación' });
                 setAccion({ [vote.id]: '¡Votación abierta!' });
                 setTimeout(() => navigate(`/voting/${vote.id}`), 1000);
             } else {
+                setBoton({ [vote.id]: 'Empezar votación' });
                 setAccion({ [vote.id]: 'Error al abrir la votación' });
             }
         } catch (err) {
+            setBoton({ [vote.id]: 'Empezar votación' });
             setAccion({ [vote.id]: 'Firma cancelada o fallida' });
         }
     }
@@ -94,9 +99,11 @@ export default function DetailsPage({ disconnect }) {
             <p><b>Descripción:</b> {vote.description}</p>
             <p><b>Estado:</b> {vote.status}</p>
             <button onClick={() => handleAbrir(vote)}>
-                {accion[vote.id] || 'Empezar votación'}
+                {boton[vote.id] || 'Empezar votación'}
             </button>
-            <p>{accion[vote.id]}</p>
+            <div style={{ minHeight: 32, marginTop: 8 }}>
+                {accion[vote.id]}
+            </div>
         </div>
     );
 }

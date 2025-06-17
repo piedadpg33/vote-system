@@ -27,6 +27,7 @@ export default function App() {
   const [authorized, setAuthorized] = useState(false);
   const [isPresidency, setIsPresidency] = useState(false);
   const [loading, setLoading] = useState(null);
+  const [accion, setAccion] = useState('');
   const navigate = useNavigate();
 
   // Función para desconectar y limpiar estado + redirigir
@@ -55,7 +56,10 @@ export default function App() {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 100 }}>
         <h2>Bienvenido al sistema de votación usando Wallet Connect</h2>
         <p>Por favor, conecta tu wallet para continuar</p>
-        <appkit-button />
+        <appkit-button onClick={() => setAccion('Por favor, confirma la conexión en tu wallet. Si usas WalletConnect, revisa tu app móvil.')} />
+        <div style={{ minHeight: 32, marginTop: 8 }}>
+          {accion}
+        </div>
       </div>
     );
   }
